@@ -6,11 +6,9 @@
 #include <vector>
 #include "Stroke.h"
 #include "ofxVectorGraphics.h"
-#include "ofxFBOTexture.h"
 #include "ofxCvGrayscaleImage.h"
 #include "ofxCvColorImage.h"
 #include "ofxCvContourFinder.h"
-#include "ofxImage.h"
 #include "vars.h"
 
 class Graffiti {
@@ -18,7 +16,7 @@ class Graffiti {
 
 	vector<Stroke*> strokes;//what is maximum number of strokes? 1000 is arbitrary
 	float scaleFactor;
-	ofxFBOTexture myFBO;
+	ofFbo myFBO;
 	ofxCvContourFinder contourFinder;
 	ofxVectorGraphics output;
 	vars* myVars;

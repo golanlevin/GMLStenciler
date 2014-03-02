@@ -4,7 +4,6 @@
 
 #include "ofMain.h"
 #include "ofxOpenCv.h"
-#include "ofxDirList.h"
 #include "ofxXmlSettings.h"
 
 #include "Graffiti.h"

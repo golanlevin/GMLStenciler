@@ -1,6 +1,8 @@
-This build is for Mac OSX 10.6.3 using
-OpenFrameworks pre release v0.061
-http://www.openframeworks.cc/versions/preRelease_v0.061/of_preRelease_v0061_osxSL_FAT.zip
+Updated to work with 0.8.0
 
-Please see this:
-http://www.openframeworks.cc/news/note-for-snow-leopard-users
+updated to build with the current release of OF.
+
+inspired by a conversation on the #fatlab irc channel this afternoon.
+
+
+
