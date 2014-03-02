@@ -6,7 +6,9 @@ graffitiControlPanel::graffitiControlPanel(vars *v) {
 
 void graffitiControlPanel::startGUI() {
 	
-	files.listDirWithExtension(".", ".gml");
+	files.listDir(ofToDataPath(""));
+    files.allowExt(".gml");
+    files.sort();
 	//files.listDir(".");//our GMLs should be in data by default anyway. Add user input later
 	
 	gui = new ofxControlPanel();

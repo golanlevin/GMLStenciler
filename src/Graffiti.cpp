@@ -1,6 +1,5 @@
 #include "Graffiti.h"
 #include "GMLPoint.h"
-#include "ofxImage.h"
 #include <vector>
 #include <math.h>
 #include <limits.h>
@@ -9,10 +8,10 @@
 
 Graffiti::Graffiti(vars *v) {
 	
-	myFBO.allocate(ofGetWidth(),ofGetHeight());
+	myFBO.allocate(ofGetWidth(),ofGetHeight(), GL_RGBA);
 	myVars = v;
 
-	ofSetColor(0xFFFFFF);//background is black, fill is white. Why? Because ofxFBO likes it that way.
+	ofSetColor(255, 255, 255);//background is black, fill is white. Why? Because ofxFBO likes it that way.
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -72,10 +71,9 @@ bool Graffiti::loadGML(char gmlLocation[]) {
 //-----------------------------------------------------------------------------------------------
 
 void Graffiti::drawSelf() {
-	myFBO.clear();
 	ofNoFill();
 	myFBO.begin();
-
+    ofClear(0, 0, 0);
 	for (int i = 0; i < strokes.size(); i++) {
 		
 		Stroke* currentStroke = strokes.at(i);
@@ -96,11 +94,14 @@ void Graffiti::saveSelf(char fileName[]) {
 	
 	//lots of code conveniently reused from findContours
 
-	ofxImage graffitiRegular;
+	ofImage graffitiRegular;
 	int w = myFBO.getWidth();
 	int h = myFBO.getHeight();
 
-	graffitiRegular.setFromPixels((unsigned char*) myFBO.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
+    ofPixels pix;
+    myFBO.readToPixels(pix);
+    
+	graffitiRegular.setFromPixels((unsigned char*) pix.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
 	graffitiRegular.update();
 	
 	graffitiRegular.mirror(false,true);
@@ -128,7 +129,7 @@ void Graffiti::saveSelf(char fileName[]) {
 		output.beginEPS(fileName);
 		output.noFill();
 		for (int i = 0; i < contourFinder.blobs.size(); i++) {
-			output.setColor(0x000000);
+			output.setColor(0, 0, 0);
 			output.beginShape();
 			for (int j = 0; j < contourFinder.blobs.at(i).pts.size() - 1; j++) {
 				ofPoint pt1 = contourFinder.blobs.at(i).pts.at(j);
@@ -157,7 +158,7 @@ void Graffiti::saveSelf(char fileName[]) {
 		output.noFill();
 		
 		for (int i = 0; i < contourFinder.blobs.size(); i++) {
-			output.setColor(0x000000);
+			output.setColor(0, 0, 0);
 			output.setLineWidth(0.35294122); // produces a 1-point line, for whatever reason
 			output.beginShape();
 			
@@ -196,7 +197,7 @@ void Graffiti::saveSelf(char fileName[]) {
 		output.endEPS();
 	}
 	
-	ofSetColor(0xFFFFFF);//otherwise we start drawing in black D:
+	ofSetColor(255, 255, 255);//otherwise we start drawing in black D:
 }
 //-----------------------------------------------------------------------------------------------
 void Graffiti::thicken() {
@@ -259,12 +260,11 @@ void Graffiti::thicken() {
 	}
 
 	//let's draw our two new strokes.
-	myFBO.clear();
 	ofFill();
-	ofSetColor(0xFFFFFF);
+	ofSetColor(255, 255, 255);
 
 	myFBO.begin();
-
+    ofClear(0, 0, 0);
 	for (int i = 0; i < strokes.size(); i++) {
 		Stroke* currentLeftStroke = leftStrokes.at(i);
 		Stroke* currentRightStroke = rightStrokes.at(i);
@@ -289,11 +289,14 @@ void Graffiti::thicken() {
 
 void Graffiti::showHoles() {
 	//need to load into an ofImage, then ofxCvGrayscaleImage, so as to solve problems w/ openCv images.
-	ofxImage graffitiRegular;
+	ofImage graffitiRegular;
 	int w = myFBO.getWidth();
 	int h = myFBO.getHeight();
+    
+    ofPixels pix;
+    myFBO.readToPixels(pix);
 
-	graffitiRegular.setFromPixels((unsigned char*) myFBO.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
+	graffitiRegular.setFromPixels((unsigned char*) pix.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
 	graffitiRegular.update();
 	
 	graffitiRegular.mirror(false,true);
@@ -320,8 +323,8 @@ void Graffiti::showHoles() {
 	}
 	for (int i = 0; i < contourFinder.blobs.size(); i++) {
 		ofNoFill();
-		if (contourFinder.blobs.at(i).hole) { ofSetColor(0x000FFF); 
-		} else { ofSetColor(0xFF0099); }
+		if (contourFinder.blobs.at(i).hole) { ofSetColor(0, 255, 255);
+		} else { ofSetColor(255, 0, 255); }
 		ofBeginShape();
 		for (int j = 0; j < contourFinder.blobs.at(i).pts.size(); j++) {
 			ofVertex(contourFinder.blobs.at(i).pts.at(j).x + myVars->xLoc,contourFinder.blobs.at(i).pts.at(j).y + myVars->yLoc);
@@ -335,7 +338,7 @@ void Graffiti::showHoles() {
 		sprintf(numStr,"contour #%d",i + 1);
 		ofDrawBitmapString(numStr, contourFinder.blobs.at(i).boundingRect.x + myVars->xLoc, contourFinder.blobs.at(i).boundingRect.y + myVars->yLoc);
 	}
-	ofSetColor(0xFFFFFF);
+	ofSetColor(255, 255, 255);
 	
 }
 
@@ -345,14 +348,16 @@ void Graffiti::findContours() {
 	thicken();//in case it hasn't been thickened- only finding contours on a thickened image
 	
 	//need to load into an ofImage, then ofxCvGrayscaleImage, so as to solve problems w/ openCv images.
-	ofxImage graffitiRegular;
+	ofImage graffitiRegular;
 	int w = myFBO.getWidth();
 	int h = myFBO.getHeight();
 
-	graffitiRegular.setFromPixels((unsigned char*) myFBO.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
+    ofPixels pix;
+    myFBO.readToPixels(pix);
+    
+	graffitiRegular.setFromPixels((unsigned char*) pix.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
 	graffitiRegular.update();
 	
-	graffitiRegular.mirror(false,true);
 	graffitiRegular.update();
 	graffitiRegular.setImageType(OF_IMAGE_GRAYSCALE);
 
@@ -372,14 +377,14 @@ void Graffiti::findContours() {
 	int testsCount = 5;//number of times to attempt to bridge before giving up.
 	int holeCount = 0;
 	for (int i = 0; i < contourFinder.blobs.size(); i++) {
-		if (!contourFinder.blobs.at(i).hole) holeCount++;
+		if (contourFinder.blobs.at(i).hole) holeCount++;
 	}
 
 	while (holeCount > 1 && testsCount > 0) {
 		ofFill();
 		myFBO.begin();
 
-		//graffitiGrayscale.draw(myVars->xLoc,myVars->yLoc);
+		graffitiGrayscale.draw(myVars->xLoc,myVars->yLoc);
 	
 		for (int i = 0; i < contourFinder.blobs.size(); i++) {//for each blob in the contourFinder's model
 			ofxCvBlob blob = contourFinder.blobs.at(i);
@@ -396,12 +401,12 @@ void Graffiti::findContours() {
 				if (nextPoint.y > blobsHighestY) blobsHighestY = nextPoint.y;
 			}
 
-			if (!blob.hole) {//apparently, hole means it's not a hole?
+			if (blob.hole) {//apparently, hole means it's not a hole?
 				ofxCvBlob surroundingBlob;
 			
 				//Now we determine the blob that surrounds 
 				for (int j = 0; j < contourFinder.blobs.size(); j++) {
-					if (j != i && contourFinder.blobs.at(j).hole) {
+					if (j != i && !contourFinder.blobs.at(j).hole) {
 						ofxCvBlob nextBlob = contourFinder.blobs.at(j);
 						float sBlobsLowestX = INT_MAX;
 						float sBlobsLowestY = INT_MAX;
@@ -461,8 +466,8 @@ void Graffiti::findContours() {
 					}
 
 					//draw a line between the two points
-					if (blob.area > 0) ofSetColor(0x000000);//if it's negative space
-					else if (blob.area < 0) ofSetColor(0xFFFFFF);//if it's positive space
+					if (blob.area > 0) ofSetColor(0, 0, 0);//if it's negative space
+					else if (blob.area < 0) ofSetColor(255, 255, 255);//if it's positive space
 					drawLine (blobsClosestPoint,SurroundingBlobsClosestPoint);
 					//drawLine(blob.pts.at(closestPointLoc - 2),blobsClosestPoint,
 						//blob.pts.at(closestPointLoc + 2),
@@ -472,7 +477,7 @@ void Graffiti::findContours() {
 				}
 
 				//we can draw a straight line up from the highest point
-				if (myVars->highestBridge) {
+				if (myVars->highestBridge && surroundingBlob.pts.size() > 0) {
 					ofPoint blobsHighestPoint = blob.pts.at(0);
 					ofPoint surroundingBlobsHighestPoint = surroundingBlob.pts.at(0);
 	
@@ -497,13 +502,13 @@ void Graffiti::findContours() {
 					blobsHighestPoint.y = blobsHighestPoint.y + 1;//change to make sure full line
 
 					//draw a line between the two points
-					if (blob.area > 0) ofSetColor(0x000000);//if it's negative space
-					else if (blob.area < 0) ofSetColor(0xFFFFFF);//if it's positive space
+					if (blob.area > 0) ofSetColor(0, 0, 0);//if it's negative space
+					else if (blob.area < 0) ofSetColor(255, 255, 255);//if it's positive space
 					drawLine(blobsHighestPoint,surroundingBlobsHighestPoint);
 				}
 
 				//lowest bridges
-				if (myVars->lowestBridge) {
+				if (myVars->lowestBridge && surroundingBlob.pts.size() > 0) {
 					ofPoint blobsLowestPoint = blob.pts.at(0);
 					ofPoint surroundingBlobsLowestPoint = surroundingBlob.pts.at(0);
 	
@@ -528,13 +533,13 @@ void Graffiti::findContours() {
 					blobsLowestPoint.y = blobsLowestPoint.y - 1;//change to make sure full line
 
 					//draw a line between the two points
-					if (blob.area > 0) ofSetColor(0x000000);//if it's negative space
-					else if (blob.area < 0) ofSetColor(0xFFFFFF);//if it's positive space
+					if (blob.area > 0) ofSetColor(0, 0, 0);//if it's negative space
+					else if (blob.area < 0) ofSetColor(255, 255, 255);//if it's positive space
 					drawLine(blobsLowestPoint,surroundingBlobsLowestPoint);
 				}
 
 				//left most bridges
-				if (myVars->leftMostBridge) {
+				if (myVars->leftMostBridge && surroundingBlob.pts.size() > 0) {
 					ofPoint blobsLeftMostPoint = blob.pts.at(0);
 					ofPoint surroundingBlobsLeftMostPoint = surroundingBlob.pts.at(0);
 	
@@ -559,13 +564,13 @@ void Graffiti::findContours() {
 					blobsLeftMostPoint.x = blobsLeftMostPoint.x + 1;//change to make sure full line
 
 					//draw a line between the two points
-					if (blob.area > 0) ofSetColor(0x000000);//if it's negative space
-					else if (blob.area < 0) ofSetColor(0xFFFFFF);//if it's positive space
+					if (blob.area > 0) ofSetColor(0, 0, 0);//if it's negative space
+					else if (blob.area < 0) ofSetColor(255, 255, 255);//if it's positive space
 					drawLine(blobsLeftMostPoint,surroundingBlobsLeftMostPoint);
 				}
 
 				//right most bridges
-				if (myVars->rightMostBridge) {
+				if (myVars->rightMostBridge && surroundingBlob.pts.size() > 0) {
 					ofPoint blobsRightMostPoint = blob.pts.at(0);
 					ofPoint surroundingBlobsRightMostPoint = surroundingBlob.pts.at(0);
 	
@@ -590,13 +595,13 @@ void Graffiti::findContours() {
 					blobsRightMostPoint.x = blobsRightMostPoint.x - 1;//change to make sure full line
 
 					//draw a line between the two points
-					if (blob.area > 0) ofSetColor(0x000000);//if it's negative space
-					else if (blob.area < 0) ofSetColor(0xFFFFFF);//if it's positive space
+					if (blob.area > 0) ofSetColor(0, 0, 0);//if it's negative space
+					else if (blob.area < 0) ofSetColor(255, 255, 255);//if it's positive space
 					drawLine(blobsRightMostPoint,surroundingBlobsRightMostPoint);
 				}
 			}
 		}
-		ofSetColor(0xFFFFFF);//reset to white so we don't get all black at next cycle
+		ofSetColor(255, 255, 255);//reset to white so we don't get all black at next cycle
 		myFBO.end();
 		myFBO.draw(myVars->xLoc,myVars->yLoc,ofGetWidth(),ofGetHeight());
 
@@ -679,11 +684,14 @@ void Graffiti::drawLine(ofPoint pt1, ofPoint pt2, ofPoint pt3, ofPoint pt4, ofPo
 //-----------------------------------------------------------------------------------------------
 
 float Graffiti::getHeight() {
-	ofxImage graffitiRegular;
+	ofImage graffitiRegular;
 	int w = myFBO.getWidth();
 	int h = myFBO.getHeight();
 
-	graffitiRegular.setFromPixels((unsigned char*) myFBO.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
+    ofPixels pix;
+    myFBO.readToPixels(pix);
+    
+	graffitiRegular.setFromPixels((unsigned char*) pix.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
 	graffitiRegular.update();
 	
 	graffitiRegular.mirror(false,true);
@@ -707,11 +715,14 @@ float Graffiti::getHeight() {
 //-----------------------------------------------------------------------------------------------
 
 float Graffiti::getWidth() {
-	ofxImage graffitiRegular;
+	ofImage graffitiRegular;
 	int w = myFBO.getWidth();
 	int h = myFBO.getHeight();
 
-	graffitiRegular.setFromPixels((unsigned char*) myFBO.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
+    ofPixels pix;
+    myFBO.readToPixels(pix);
+    
+	graffitiRegular.setFromPixels((unsigned char*) pix.getPixels(),w,h,OF_IMAGE_COLOR_ALPHA);
 	graffitiRegular.update();
 	
 	graffitiRegular.mirror(false,true);
